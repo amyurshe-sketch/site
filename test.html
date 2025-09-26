@@ -1,1 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Монстробой</title>
+    <style>
+        body{margin:0;padding:0;overflow:hidden;background:#222;touch-action:none;font-family:Arial,sans-serif;position:fixed;width:100%;height:100%}
+        #gameCanvas{display:block;background:#111;width:100%;height:100%}
+        #joystick{position:absolute;left:30px;bottom:30px;width:100px;height:100px;background:rgba(255,255,255,.2);border-radius:50%;border:2px solid rgba(255,255,255,.5);z-index:10;display:none} /* скрыт на ПК */
+        #joystickKnob{position:absolute;width:40px;height:40px;background:rgba(255,255,255,.7);border-radius:50%;left:30px;top:30px;transition:transform .1s ease-out}
+        #fireButton{position:absolute;right:30px;bottom:30px;width:70px;height:70px;background:rgba(255,50,50,.5);border-radius:50%;border:2px solid rgba(255,255,255,.5);display:none;z-index:10} /* скрыт на ПК */
+        #lives{position:absolute;top:10px;left:10px;color:white;font-size:20px;z-index:10}
+        #score{position:absolute;top:10px;right:10px;color:white;font-size:20px;z-index:10}
+        #pauseButton{position:absolute;top:50px;left:10px;color:white;font-size:20px;z-index:10;background:rgba(0,0,0,.5);border:1px solid white;border-radius:5px;padding:5px 10px}
+        #backButton{position:absolute;top:50px;right:10px;color:white;font-size:20px;z-index:10;background:rgba(0,0,0,.5);border:1px solid white;border-radius:5px;padding:5px 10px;cursor:pointer}
+        #gameOver{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);display:none;justify-content:center;align-items:center;flex-direction:column;color:white;font-size:24px;z-index:20}
+        #startScreen{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);display:flex;justify-content:center;align-items:center;flex-direction:column;color:white;z-index:30;text-align:center;padding:20px;box-sizing:border-box}
+        .gameButton{margin-top:15px;padding:8px 16px;font-size:18px;background:#4CAF50;border:none;border-radius:5px;color:white;min-width:120px;cursor:pointer}
+        .buttonRow{display:flex;gap:10px;margin-top:10px}
+        #orientationWarning{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);display:none;justify-content:center;align-items:center;flex-direction:column;color:white;font-size:20px;text-align:center;padding:20px;z-index:40}
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="joystick"><div id="joystickKnob"></div></div>
+    <div id="fireButton"></div>
+    <div id="lives">Жизни: ❤️❤️❤️</div>
+    <div id="score">Очки: 0</div>
+    <button id="pauseButton">Пауза</button>
+    <button id="backButton" onclick="window.location.href='main.html'">Назад</button>
 
+    <div id="gameOver">
+        <div>Игра окончена!</div>
+        <div id="finalScore">Очки: 0</div>
+        <div class="buttonRow">
+            <button id="restartButton" class="gameButton">Играть ещё</button>
+            <button class="gameButton" onclick="window.location.href='main.html'">Назад</button>
+        </div>
+    </div>
+
+    <div id="startScreen">
+        <h1>Монстробой</h1>
+        <p>Уничтожайте монстров и избегайте столкновений!</p>
+        <button id="startButton" class="gameButton">Начать игру</button>
+    </div>
+
+    <div id="orientationWarning">
+        <h2>Пожалуйста, поверните устройство</h2>
+        <p>Игра работает только в горизонтальном режиме</p>
+    </div>
+
+    <script>
+        // ---------- базовые настройки ----------
+        const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+        const joystick=document.getElementById('joystick'), knob=document.getElementById('joystickKnob'), fireBtn=document.getElementById('fireButton');
+        const livesEl=document.getElementById('lives'), scoreEl=document.getElementById('score'), pauseBtn=document.getElementById('pauseButton');
+        const startScr=document.getElementById('startScreen'), gameOverScr=document.getElementById('gameOver'), orientWarn=document.getElementById('orientationWarning');
+        let W,H, running=false, paused=false, lives=3, score=0, lastTime=0, difficulty=1;
+        const player={x:0,y:0,r:15,sp:2.5,vx:0,vy:0,dir:0,bullets:[],lastHit:0,cd:1000};
+        const enemies=[], bullets=[], explosions=[];
+
+        function resize(){ W=canvas.width=innerWidth; H=canvas.height=innerHeight; player.x=W/2; player.y=H/2; }
+        addEventListener('resize',resize); resize();
+
+        // ---------- управление ----------
+        const isMobile=navigator.maxTouchPoints>0;
+        joystick.style.display=isMobile?'block':'none';
+        fireBtn.style.display=isMobile?'block':'none';
+
+        let joyActive=false, joyAngle=0, joyDist=0, firing=false, lastFire=0;
+        const joyBase={x:80,y:H-80,r:50};
+
+        function joyStart(e){ if(!running||paused)return; joyActive=true; joyMove(e.touches[0]); e.preventDefault(); }
+        function joyMove(e){ if(!joyActive)return; const t=e.touches[0], dx=t.clientX-joyBase.x, dy=t.clientY-joyBase.y;
+            joyAngle=Math.atan2(dy,dx); joyDist=Math.min(Math.hypot(dx,dy),50);
+            knob.style.transform=`translate(${dx-20}px,${dy-20}px)`;
+            player.vx=Math.cos(joyAngle)*player.sp*(joyDist/50); player.vy=Math.sin(joyAngle)*player.sp*(joyDist/50);
+        }
+        function joyEnd(){ joyActive=false; knob.style.transform=''; joyDist=0; player.vx*=0.9; player.vy*=0.9; }
+        addEventListener('touchstart',e=>{if(e.target.id==='joystick')joyStart(e)});
+        addEventListener('touchmove',e=>{if(joyActive)joyMove(e.touches[0])});
+        addEventListener('touchend',joyEnd);
+        fireBtn.addEventListener('touchstart',()=>firing=true);
+        fireBtn.addEventListener('touchend',()=>firing=false);
+
+        // ---------- игровые механики ----------
+        function updatePlayer(){
+            if(joyActive){ player.x+=player.vx; player.y+=player.vy; }
+            else{ player.x+=player.vx*=0.9; player.y+=player.vy*=0.9; }
+            player.x=Math.max(player.r,Math.min(W-player.r,player.x));
+            player.y=Math.max(player.r,Math.min(H-player.r,player.y));
+            player.dir=joyActive?joyAngle:Math.atan2(player.vy||0,player.vx||0);
+            if(firing&&Date.now()-lastFire>300){ bullets.push({x:player.x,y:player.y,dx:Math.cos(player.dir)*5,dy:Math.sin(player.dir)*5,r:3}); lastFire=Date.now(); }
+        }
+        function drawPlayer(){
+            ctx.fillStyle='#3498db'; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(player.x,player.y); ctx.lineTo(player.x+Math.cos(player.dir)*player.r*1.5,player.y+Math.sin(player.dir)*player.r*1.5); ctx.stroke();
+        }
+        function updateBullets(){ for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.x+=b.dx; b.y+=b.dy; if(b.x<0||b.x>W||b.y<0||b.y>H)bullets.splice(i,1); } }
+        function drawBullets(){ ctx.fillStyle='#f1c40f'; for(const b of bullets){ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); } }
+        function spawnEnemy(){
+            const edge=Math.floor(Math.random()*4), r=10+Math.random()*5, spd=(0.4+Math.random()*0.2)*difficulty;
+            let x,y; switch(edge){ case 0:x=Math.random()*W;y=-r;break; case 1:x=W+r;y=Math.random()*H;break; case 2:x=Math.random()*W;y=H+r;break; case 3:x=-r;y=Math.random()*H;break; }
+            enemies.push({x,y,r,spd,color:`hsl(${Math.random()*360},70%,50%)`,hit:false,hitTime:0,health:1+Math.floor(difficulty*0.3)});
+        }
+        function updateEnemies(){ for(let i=enemies.length-1;i>=0;i--){ const e=enemies[i]; if(e.hit){ if(Date.now()-e.hitTime>200)enemies.splice(i,1); continue; } const a=Math.atan2(player.y-e.y,player.x-e.x); e.x+=Math.cos(a)*e.spd; e.y+=Math.sin(a)*e.spd; } }
+        function drawEnemies(){ for(const e of enemies){ if(e.hit){ const p=(Date.now()-e.hitTime)/200,scale=1+p*2,alpha=1-p; ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=e.color; ctx.beginPath(); ctx.arc(e.x,e.y,e.r*scale,0,Math.PI*2); ctx.fill(); ctx.restore(); }else{ ctx.fillStyle=e.color; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); } } }
+        function checkCollisions(){
+            // пули по врагам
+            for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.hit)continue; const dx=b.x-e.x,dy=b.y-e.y,d=Math.hypot(dx,dy); if(d<b.r+e.r){ e.health--; if(e.health<=0){ e.hit=true; e.hitTime=Date.now(); score+=Math.floor(10*difficulty); updateScore(); } bullets.splice(i,1); break; } } }
+            // враги по игроку
+            for(const e of enemies){ if(e.hit)continue; const dx=player.x-e.x,dy=player.y-e.y,d=Math.hypot(dx,dy); if(d<player.r+e.r&&Date.now()-player.lastHit>player.cd){ lives--; player.lastHit=Date.now(); updateLives(); if(lives<=0)gameOver(); } }
+        }
+        function updateLives(){ let s=''; for(let i=0;i<3;i++)s+=i<lives?'❤️':'♡'; livesEl.textContent=`Жизни: ${s}`; }
+        function updateScore(){ scoreEl.textContent=`Очки: ${score}`; }
+        function gameOver(){ running=false; document.getElementById('finalScore').textContent=`Очки: ${score}`; gameOverScr.style.display='flex'; }
+
+        // ---------- игровой цикл ----------
+        function loop(t){
+            if(!running||paused)return;
+            const dt=t-lastTime; lastTime=t;
+            difficulty=1+Math.min(t/120000,2); // растёт со временем
+            ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
+            updatePlayer(); drawPlayer();
+            updateBullets(); drawBullets();
+            if(t-lastSpawn>2000/difficulty){ spawnEnemy(); lastSpawn=t; }
+            updateEnemies(); drawEnemies();
+            checkCollisions();
+            requestAnimationFrame(loop);
+        }
+        let lastSpawn=0;
+
+        // ---------- UI ----------
+        function start(){
+            startScr.style.display='none'; running=true; paused=false; lives=3; score=0; lastTime=performance.now(); bullets.length=0; enemies.length=0; updateLives(); updateScore(); requestAnimationFrame(loop);
+        }
+        function togglePause(){ if(!running)return; paused=!paused; pauseBtn.textContent=paused?'Продолжить':'Пауза'; if(!paused)requestAnimationFrame(loop); }
+        document.getElementById('startButton').addEventListener('click',start);
+        document.getElementById('restartButton').addEventListener('click',()=>{ gameOverScr.style.display='none'; start(); });
+        pauseBtn.addEventListener('click',togglePause);
+
+        // ---------- ориентация ----------
+        function checkOrient(){ orientWarn.style.display=(innerWidth>innerHeight)?'none':'flex'; }
+        addEventListener('resize',checkOrient); checkOrient();
+    </script>
+</body>
+</html>
