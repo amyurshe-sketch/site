@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Змейка</title>
+    <style>
+        /* Улучшенные стили для таймера и анимаций */
+        .food-eaten {
+            animation: foodEaten 0.5s forwards;
+        }
+        
+        .bonus-eaten {
+            animation: bonusEaten 0.8s forwards;
+        }
+        
+        @keyframes foodEaten {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.8); opacity: 0.7; }
+            100% { transform: scale(0.5); opacity: 0; }
+        }
+        
+        @keyframes bonusEaten {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 15px gold; }
+            25% { transform: scale(2); opacity: 1; box-shadow: 0 0 30px gold; }
+            50% { transform: scale(1.5); opacity: 0.9; box-shadow: 0 0 40px orange; }
+            100% { transform: scale(0.1); opacity: 0; box-shadow: 0 0 0px yellow; }
+        }
+        
+        .bonus-timer {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            z-index: 3;
+            top: -4px;
+            left: -4px;
+            pointer-events: none;
+            animation: timerBlink 1s infinite;
+        }
+        
+        @keyframes timerBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .timer-progress {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            clip: rect(0, 14px, 28px, 0);
+        }
+        
+        .timer-fill {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: rgba(255, 215, 0, 0.8);
+            transform: rotate(0deg);
+            animation: timerFill 7s linear forwards;
+        }
+        
+        @keyframes timerFill {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .bonus-circle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: gold;
+            border-radius: 50%;
+            z-index: 2;
+            animation: circleBlink 0.8s infinite;
+        }
+        
+        @keyframes circleBlink {
+            0%, 100% { box-shadow: 0 0 8px yellow, 0 0 0px rgba(255,255,0,0.5); }
+            50% { box-shadow: 0 0 15px orange, 0 0 10px rgba(255,165,0,0.8); }
+        }
+        
+        /* Остальные стили остаются без изменений */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            touch-action: manipulation;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+        
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        #button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #back-btn {
+            padding: 5px 15px;
+            background-color: #45a049;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 18px;
+        }
+        
+        #score-container {
+            font-size: 24px;
+            font-weight: bold;
+            flex-grow: 1;
+            text-align: center;
+        }
+        
+        #pause-btn {
+            padding: 5px 15px;
+            background-color: #45a049;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 18px;
+        }
+        
+        #game-board {
+            flex-grow: 1;
+            background-color: #333;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 5px;
+            padding: 15px;
+            background-color: #4CAF50;
+            height: 180px;
+            box-sizing: border-box;
+        }
+        
+        .control-btn {
+            background-color: #45a049;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            min-height: 50px;
+        }
+        
+        .control-btn:active {
+            background-color: #3e8e41;
+        }
+        
+        #up-btn {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        
+        #left-btn {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        
+        #right-btn {
+            grid-column: 3;
+            grid-row: 2;
+        }
+        
+        #down-btn {
+            grid-column: 2;
+            grid-row: 3;
+        }
+        
+        .snake-segment {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 3px;
+            z-index: 1;
+            transition: background-color 0.1s;
+        }
+        
+        .snake-head {
+            background-color: #2E7D32 !important;
+        }
+        
+        .snake-blink {
+            animation: blink 0.2s 3;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .food {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #f44336;
+            border-radius: 50%;
+            z-index: 2;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 36px;
+            z-index: 10;
+        }
+        
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 36px;
+            z-index: 15;
+        }
+        
+        #start-btn {
+            padding: 15px 40px;
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin-top: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        #start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        #bonus-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: gold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+            z-index: 5;
+        }
+        
+        #restart-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <button id="back-btn">Назад</button>
+            <div id="score-container">
+                Очки: <span id="score">0</span>
+            </div>
+            <div id="button-group">
+                <button id="pause-btn">Пауза</button>
+            </div>
+        </div>
+        
+        <div id="bonus-info">Бонус: +50</div>
+        
+        <div id="game-board"></div>
+        
+        <div id="start-screen">
+            <div>ЗМЕЙКА</div>
+            <button id="start-btn">СТАРТ</button>
+        </div>
+        
+        <div id="controls">
+            <button class="control-btn" id="up-btn">↑</button>
+            <button class="control-btn" id="left-btn">←</button>
+            <button class="control-btn" id="right-btn">→</button>
+            <button class="control-btn" id="down-btn">↓</button>
+        </div>
+        
+        <div id="game-over">
+            Игра окончена!
+            <button id="restart-btn">Играть снова</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameBoard = document.getElementById('game-board');
+            const scoreElement = document.getElementById('score');
+            const gameOverElement = document.getElementById('game-over');
+            const restartBtn = document.getElementById('restart-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const startBtn = document.getElementById('start-btn');
+            const backBtn = document.getElementById('back-btn');
+            const startScreen = document.getElementById('start-screen');
+            const bonusInfo = document.getElementById('bonus-info');
+            
+            const upBtn = document.getElementById('up-btn');
+            const leftBtn = document.getElementById('left-btn');
+            const rightBtn = document.getElementById('right-btn');
+            const downBtn = document.getElementById('down-btn');
+            
+            // Размеры игрового поля
+            const gridSize = 20;
+            let tileSize;
+            let boardWidth, boardHeight;
+            
+            // Игровые переменные
+            let snake = [];
+            let food = {};
+            let bonusFood = null;
+            let direction = 'right';
+            let nextDirection = 'right';
+            let score = 0;
+            let gameSpeed = 220;
+            let gameLoop;
+            let bonusTimer = null;
+            let isGameOver = false;
+            let isPaused = false;
+            let isBlinking = false;
+            let isGameStarted = false;
+            let lastSpeedIncrease = 0;
+            
+            // Инициализация игры
+            function initGame() {
+                // Очищаем игровое поле
+                gameBoard.innerHTML = '';
+                bonusInfo.style.display = 'none';
+                
+                // Рассчитываем размеры
+                calculateSizes();
+                
+                // Создаем змейку
+                const startX = Math.floor(boardWidth / 2 / tileSize) * tileSize;
+                const startY = Math.floor(boardHeight / 2 / tileSize) * tileSize;
+                
+                snake = [
+                    { x: startX, y: startY },
+                    { x: startX - tileSize, y: startY },
+                    { x: startX - tileSize * 2, y: startY }
+                ];
+                
+                // Устанавливаем начальное направление
+                direction = 'right';
+                nextDirection = 'right';
+                
+                // Сбрасываем счет
+                score = 0;
+                lastSpeedIncrease = 0;
+                scoreElement.textContent = score;
+                
+                // Создаем еду
+                createFood(true);
+                
+                // Удаляем бонусную еду
+                if (bonusTimer) {
+                    clearTimeout(bonusTimer);
+                    bonusTimer = null;
+                }
+                bonusFood = null;
+                
+                // Отрисовываем змейку и еду
+                drawSnake();
+                drawFood();
+                
+                // Сбрасываем флаги
+                isGameOver = false;
+                isPaused = false;
+                isBlinking = false;
+                isGameStarted = false;
+                
+                // Показываем стартовый экран
+                startScreen.style.display = 'flex';
+                pauseBtn.textContent = 'Пауза';
+                gameOverElement.style.display = 'none';
+                
+                // Останавливаем игровой цикл, если он был запущен
+                if (gameLoop) {
+                    clearInterval(gameLoop);
+                    gameLoop = null;
+                }
+            }
+            
+            // Запуск игры
+            function startGame() {
+                if (!isGameStarted) {
+                    isGameStarted = true;
+                    isPaused = false;
+                    
+                    // Скрываем стартовый экран
+                    startScreen.style.display = 'none';
+                    
+                    // Запускаем игровой цикл
+                    if (gameLoop) clearInterval(gameLoop);
+                    gameLoop = setInterval(gameStep, gameSpeed);
+                    
+                    // Запускаем таймер для бонусной еды
+                    scheduleBonusFood();
+                }
+            }
+            
+            // Рассчитываем размеры элементов
+            function calculateSizes() {
+                const boardRect = gameBoard.getBoundingClientRect();
+                boardWidth = boardRect.width;
+                boardHeight = boardRect.height;
+                
+                // Рассчитываем размер клетки так, чтобы поле делилось на целое количество клеток
+                tileSize = Math.min(
+                    Math.floor(boardWidth / gridSize),
+                    Math.floor(boardHeight / gridSize)
+                );
+            }
+            
+            // Создаем еду
+            function createFood(initial = false) {
+                const maxX = Math.floor(boardWidth / tileSize);
+                const maxY = Math.floor(boardHeight / tileSize);
+                
+                let foodX, foodY;
+                let validPosition = false;
+                let attempts = 0;
+                
+                while (!validPosition && attempts < 100) {
+                    foodX = Math.floor(Math.random() * maxX) * tileSize;
+                    foodY = Math.floor(Math.random() * maxY) * tileSize;
+                    
+                    validPosition = true;
+                    
+                    // Проверяем, чтобы еда не появилась на змейке
+                    for (const segment of snake) {
+                        if (Math.abs(segment.x - foodX) < 5 && Math.abs(segment.y - foodY) < 5) {
+                            validPosition = false;
+                            break;
+                        }
+                    }
+                    
+                    // Проверяем, чтобы не появилась на бонусной еде
+                    if (bonusFood && 
+                        Math.abs(bonusFood.x - foodX) < 5 && 
+                        Math.abs(bonusFood.y - foodY) < 5) {
+                        validPosition = false;
+                    }
+                    
+                    // При первом создании проверяем, чтобы еда не была слишком близко к змейке
+                    if (initial) {
+                        for (const segment of snake) {
+                            const dist = Math.sqrt(
+                                Math.pow(segment.x - foodX, 2) + 
+                                Math.pow(segment.y - foodY, 2)
+                            );
+                            if (dist < tileSize * 3) {
+                                validPosition = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    attempts++;
+                }
+                
+                if (validPosition) {
+                    food = { x: foodX, y: foodY };
+                } else {
+                    // Если не удалось найти подходящее место, размещаем в случайной позиции
+                    foodX = Math.floor(Math.random() * maxX) * tileSize;
+                    foodY = Math.floor(Math.random() * maxY) * tileSize;
+                    food = { x: foodX, y: foodY };
+                }
+            }
+            
+            // Создаем бонусную еду
+            function createBonusFood() {
+                if (bonusFood || !isGameStarted || isGameOver || isPaused) return;
+                
+                const maxX = Math.floor(boardWidth / tileSize);
+                const maxY = Math.floor(boardHeight / tileSize);
+                
+                let foodX, foodY;
+                let validPosition = false;
+                let attempts = 0;
+                
+                while (!validPosition && attempts < 100) {
+                    foodX = Math.floor(Math.random() * maxX) * tileSize;
+                    foodY = Math.floor(Math.random() * maxY) * tileSize;
+                    
+                    validPosition = true;
+                    
+                    // Проверяем, чтобы не появилась на змейке
+                    for (const segment of snake) {
+                        if (Math.abs(segment.x - foodX) < 5 && Math.abs(segment.y - foodY) < 5) {
+                            validPosition = false;
+                            break;
+                        }
+                    }
+                    
+                    // Проверяем, чтобы не появилась на обычной еде
+                    if (Math.abs(food.x - foodX) < 5 && Math.abs(food.y - foodY) < 5) {
+                        validPosition = false;
+                    }
+                    
+                    attempts++;
+                }
+                
+                if (validPosition) {
+                    bonusFood = { x: foodX, y: foodY };
+                    drawFood();
+                    
+                    // Устанавливаем таймер для удаления бонусной еды
+                    if (bonusTimer) clearTimeout(bonusTimer);
+                    bonusTimer = setTimeout(() => {
+                        if (bonusFood) {
+                            bonusFood = null;
+                            drawFood();
+                        }
+                    }, 7000); // 7 секунд
+                }
+            }
+            
+            // Планируем появление бонусной еды
+            function scheduleBonusFood() {
+                if (!isGameStarted || isGameOver || isPaused) return;
+                
+                // Случайный интервал между 10 и 20 секундами
+                const delay = 10000 + Math.random() * 10000;
+                setTimeout(() => {
+                    createBonusFood();
+                    if (isGameStarted) scheduleBonusFood();
+                }, delay);
+            }
+            
+            // Отрисовываем змейку
+            function drawSnake() {
+                // Удаляем старые сегменты
+                const oldSegments = document.querySelectorAll('.snake-segment');
+                oldSegments.forEach(seg => seg.remove());
+                
+                // Создаем новые сегменты
+                snake.forEach((segment, index) => {
+                    const segmentElement = document.createElement('div');
+                    segmentElement.className = 'snake-segment';
+                    segmentElement.style.left = `${segment.x}px`;
+                    segmentElement.style.top = `${segment.y}px`;
+                    
+                    // Голова змейки
+                    if (index === 0) {
+                        segmentElement.classList.add('snake-head');
+                    }
+                    
+                    gameBoard.appendChild(segmentElement);
+                });
+            }
+            
+            // Мигание змейки при столкновении
+            async function blinkSnake() {
+                if (isBlinking) return;
+                
+                isBlinking = true;
+                const segments = document.querySelectorAll('.snake-segment');
+                
+                // Мигаем 3 раза
+                for (let i = 0; i < 3; i++) {
+                    segments.forEach(seg => seg.classList.add('snake-blink'));
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    segments.forEach(seg => seg.classList.remove('snake-blink'));
+                    if (i < 2) await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                isBlinking = false;
+            }
+            
+            // Отрисовываем еду
+            function drawFood() {
+                // Удаляем старую еду
+                const oldFood = document.querySelectorAll('.food, .bonus-circle, .bonus-timer');
+                oldFood.forEach(f => f.remove());
+                
+                // Обычная еда
+                const foodElement = document.createElement('div');
+                foodElement.className = 'food';
+                foodElement.style.left = `${food.x}px`;
+                foodElement.style.top = `${food.y}px`;
+                gameBoard.appendChild(foodElement);
+                
+                // Бонусная еда (если есть)
+                if (bonusFood) {
+                    // Создаем контейнер для бонусной еды
+                    const bonusContainer = document.createElement('div');
+                    bonusContainer.style.position = 'absolute';
+                    bonusContainer.style.left = `${bonusFood.x}px`;
+                    bonusContainer.style.top = `${bonusFood.y}px`;
+                    bonusContainer.style.width = '20px';
+                    bonusContainer.style.height = '20px';
+                    
+                    // Создаем золотой круг (бонусная еда)
+                    const bonusCircle = document.createElement('div');
+                    bonusCircle.className = 'bonus-circle';
+                    bonusContainer.appendChild(bonusCircle);
+                    
+                    // Создаем таймер для бонусной еды
+                    const timerElement = document.createElement('div');
+                    timerElement.className = 'bonus-timer';
+                    
+                    // Создаем прогресс бар
+                    const progressElement = document.createElement('div');
+                    progressElement.className = 'timer-progress';
+                    
+                    const fillElement = document.createElement('div');
+                    fillElement.className = 'timer-fill';
+                    progressElement.appendChild(fillElement);
+                    
+                    timerElement.appendChild(progressElement);
+                    bonusContainer.appendChild(timerElement);
+                    
+                    gameBoard.appendChild(bonusContainer);
+                }
+            }
+            
+            // Основной игровой цикл
+            function gameStep() {
+                if (isGameOver || isPaused || isBlinking || !isGameStarted) return;
+                
+                // Обновляем направление
+                direction = nextDirection;
+                
+                // Получаем голову змейки
+                const head = { ...snake[0] };
+                
+                // Двигаем голову в текущем направлении
+                switch (direction) {
+                    case 'up':
+                        head.y -= tileSize;
+                        if (head.y < 0) head.y = boardHeight - tileSize;
+                        break;
+                    case 'down':
+                        head.y += tileSize;
+                        if (head.y >= boardHeight) head.y = 0;
+                        break;
+                    case 'left':
+                        head.x -= tileSize;
+                        if (head.x < 0) head.x = boardWidth - tileSize;
+                        break;
+                    case 'right':
+                        head.x += tileSize;
+                        if (head.x >= boardWidth) head.x = 0;
+                        break;
+                }
+                
+                // Проверяем столкновение с собой
+                for (let i = 1; i < snake.length; i++) {
+                    if (Math.abs(snake[i].x - head.x) < 5 && Math.abs(snake[i].y - head.y) < 5) {
+                        handleCollision();
+                        return;
+                    }
+                }
+                
+                // Добавляем новую голову
+                snake.unshift(head);
+                
+                // Проверяем, съели ли еду
+                let ateFood = false;
+                let ateBonus = false;
+                
+                // Проверяем бонусную еду с увеличенным допуском (15 пикселей)
+                if (bonusFood && 
+                    Math.abs(head.x - bonusFood.x) < 15 && 
+                    Math.abs(head.y - bonusFood.y) < 15) {
+                    // Бонусные очки
+                    score += 50;
+                    scoreElement.textContent = score;
+                    ateBonus = true;
+                    
+                    // Показываем сообщение о бонусе
+                    bonusInfo.style.display = 'block';
+                    bonusInfo.textContent = `Бонус: +50!`;
+                    setTimeout(() => {
+                        bonusInfo.style.display = 'none';
+                    }, 2000);
+                    
+                    // Анимация съедения бонуса
+                    const bonusCircles = document.querySelectorAll('.bonus-circle');
+                    if (bonusCircles.length > 0) {
+                        bonusCircles[0].classList.add('bonus-eaten');
+                        setTimeout(() => {
+                            if (bonusCircles[0]) bonusCircles[0].remove();
+                        }, 800);
+                    }
+                    
+                    // Удаляем бонусную еду
+                    clearTimeout(bonusTimer);
+                    bonusTimer = null;
+                    bonusFood = null;
+                }
+                // Проверяем обычную еду с увеличенным допуском (15 пикселей)
+                else if (Math.abs(head.x - food.x) < 15 && Math.abs(head.y - food.y) < 15) {
+                    // Обычные очки
+                    score += 10;
+                    scoreElement.textContent = score;
+                    ateFood = true;
+                    
+                    // Анимация съедения еды
+                    const foodElements = document.querySelectorAll('.food');
+                    if (foodElements.length > 0) {
+                        foodElements[0].classList.add('food-eaten');
+                        setTimeout(() => {
+                            if (foodElements[0]) foodElements[0].remove();
+                        }, 500);
+                    }
+                    
+                    // Создаем новую еду
+                    createFood();
+                }
+                
+                // Если не съели еду, удаляем хвост
+                if (!ateFood && !ateBonus) {
+                    snake.pop();
+                }
+                
+                // Увеличиваем скорость каждые 50 очков
+                if (score >= lastSpeedIncrease + 50 && gameSpeed > 80) {
+                    gameSpeed -= 5;
+                    lastSpeedIncrease = score;
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(gameStep, gameSpeed);
+                }
+                
+                // Отрисовываем змейку и еду
+                drawSnake();
+                if (!ateFood) drawFood();
+            }
+            
+            // Обработка столкновения
+            async function handleCollision() {
+                // Мигаем змейкой перед завершением игры
+                await blinkSnake();
+                gameOver();
+            }
+            
+            // Конец игры
+            function gameOver() {
+                isGameOver = true;
+                isGameStarted = false;
+                clearInterval(gameLoop);
+                gameOverElement.style.display = 'flex';
+                
+                // Очищаем бонусную еду
+                if (bonusTimer) {
+                    clearTimeout(bonusTimer);
+                    bonusTimer = null;
+                }
+                bonusFood = null;
+            }
+            
+            // Пауза/продолжение игры
+            function togglePause() {
+                if (!isGameStarted) return;
+                
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? 'Продолжить' : 'Пауза';
+                
+                // При паузе останавливаем таймер бонусной еды
+                if (isPaused && bonusTimer) {
+                    clearTimeout(bonusTimer);
+                } else if (!isPaused && bonusFood) {
+                    // При продолжении перезапускаем таймер бонусной еды
+                    bonusTimer = setTimeout(() => {
+                        if (bonusFood) {
+                            bonusFood = null;
+                            drawFood();
+                        }
+                    }, 7000);
+                }
+            }
+            
+            // Обработчики кнопок управления
+            upBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (direction !== 'down') nextDirection = 'up';
+            });
+            
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (direction !== 'right') nextDirection = 'left';
+            });
+            
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (direction !== 'left') nextDirection = 'right';
+            });
+            
+            downBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (direction !== 'up') nextDirection = 'down';
+            });
+            
+            // Также добавляем обработчики для click на случай, если touch не сработает
+            upBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (direction !== 'down') nextDirection = 'up';
+            });
+            
+            leftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (direction !== 'right') nextDirection = 'left';
+            });
+            
+            rightBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (direction !== 'left') nextDirection = 'right';
+            });
+            
+            downBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (direction !== 'up') nextDirection = 'down';
+            });
+            
+            // Обработчик кнопки перезапуска
+            restartBtn.addEventListener('click', () => {
+                initGame();
+                startGame();
+            });
+            
+            // Обработчик кнопки паузы
+            pauseBtn.addEventListener('click', togglePause);
+            
+            // Обработчик кнопки старта
+            startBtn.addEventListener('click', startGame);
+            
+            // Обработчик кнопки назад
+            backBtn.addEventListener('click', () => {
+                window.location.href = 'main.html';
+            });
+            
+            // Обработчик изменения размера окна
+            window.addEventListener('resize', () => {
+                calculateSizes();
+                drawSnake();
+                drawFood();
+            });
+            
+            // Инициализируем игру при загрузке
+            initGame();
+        });
+    </script>
+</body>
+</html>
