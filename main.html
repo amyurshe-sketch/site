@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -10,7 +9,10 @@
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f0f0f0;
+      opacity: 0;
+      animation: fadeIn 1.5s ease-out forwards;
     }
+
     #app {
       height: 100%;
       display: flex;
@@ -22,6 +24,8 @@
     h1 {
       font-size: 6rem;
       margin-bottom: 40px;
+      opacity: 0;
+      animation: slideIn 1.2s ease-out 0.3s forwards;
     }
     button {
       font-size: 3rem;
@@ -30,17 +34,33 @@
       cursor: pointer;
       border: none;
       border-radius: 16px;
-      background-color: #007BFF;
+      background-color: #000000;
       color: white;
-      transition: background-color 0.3s;
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: buttonAppear 1s ease-out 0.6s forwards;
     }
     button:hover {
-      background-color: #0056b3;
+      background-color: #333333;
+      transform: translateY(-2px);
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes buttonAppear {
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-
   <div id="app"></div>
 
   <script>
@@ -52,6 +72,7 @@
         <button id="game2-btn">Игра 2</button>
         <button id="game3-btn">Игра 3</button>
         <button id="snake-btn">Змейка</button>
+        <button id="shoot-btn">Шутер</button>
         <button id="instr-btn">Инструкция</button>
       `;
     }
@@ -65,7 +86,7 @@
       renderMainMenu();
 
       document.getElementById('game1-btn').addEventListener('click', () => {
-        navigateWithCacheBust('random1.html');
+        navigateWithCacheBust('choose7_8.html');
       });
 
       document.getElementById('game2-btn').addEventListener('click', () => {
@@ -80,11 +101,14 @@
         navigateWithCacheBust('snake.html');
       });
 
+      document.getElementById('shoot-btn').addEventListener('click', () => {
+        navigateWithCacheBust('shoot.html');
+      });
+
       document.getElementById('instr-btn').addEventListener('click', () => {
         navigateWithCacheBust('instr.html');
       });
     });
   </script>
-
 </body>
 </html>
