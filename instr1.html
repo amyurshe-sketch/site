@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Инструкция и игры</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      max-width: 600px;
+    }
+    h2 {
+      color: #2c3e50;
+    }
+    section {
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+    input, select, button {
+      padding: 7px;
+      font-size: 1em;
+      margin-bottom: 10px;
+      width: 100%;
+      max-width: 250px;
+    }
+    .game-result {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #27ae60;
+    }
+  </style>
+</head>
+<body>
+
+  <section>
+    <h2>Инструкция к играм</h2>
+
+    <h3>Игра 1</h3>
+    <p>Будет показан квадрат, на который надо будет кликнуть,после того как он исчезнет. Игра будет усложнятся. Увеличится поле и количество квадратов.</p>
+    
+
+    <h3>Игра 2</h3>
+    <p>Выберите количество цифр в числе, которое появится. Запомните число и введите его в поле ниже.</p>
+    <label for="game2-length">Количество цифр</label>
+    <input type="number" id="game2-length" min="1" max="10" placeholder="Введите число"/>
+    <button onclick="showNumberGame2()">Показать число</button>
+    <div id="game2-number" style="font-weight:bold; margin:10px 0;"></div>
+
+    <label for="game2-input">Введите запомненное число</label>
+    <input type="text" id="game2-input" placeholder="Введите число"/>
+    <button onclick="checkGame2()">Проверить</button>
+    <div id="game2-result" class="game-result"></div>
+
+    <h3>Игра 3</h3>
+    <p>Выберите правильный перевод слова</p>
+    <p><b>Слово</b>: <span id="word">cat</span></p>
+    <select id="game3-select">
+      <option value="">-- Выберите перевод --</option>
+      <option value="dog">Собака</option>
+      <option value="cat">Кот</option>
+      <option value="bird">Птица</option>
+    </select>
+    <button onclick="checkGame3()">Проверить</button>
+    <div id="game3-result" class="game-result"></div>
+  </section>
+
+  <button onclick="location.href='main.html'" style="margin-top:20px; padding:10px 20px; font-size:1em;">На главную</button>
+
+<script>
+  function playGame1() {
+    const input = document.getElementById('game1-input').value;
+    const n = parseInt(input);
+    const outputDiv = document.getElementById('game1-output');
+
+    if (isNaN(n) || n < 1) {
+      outputDiv.textContent = 'Пожалуйста, введите положительное число.';
+      return;
+    }
+
+    let result = [];
+    for (let i = 1; i <= n; i++) {
+      result.push(i + 3);
+    }
+    outputDiv.textContent = 'Результат: ' + result.join(', ');
+  }
+
+  let game2Number = '';
+
+  function showNumberGame2() {
+    const lenInput = document.getElementById('game2-length').value;  const length = parseInt(lenInput);
+    const numberDiv = document.getElementById('game2-number');
+    const resultDiv = document.getElementById('game2-result');
+    resultDiv.textContent = '';
+    game2Number = '';
+
+    if (isNaN(length) || length < 1 || length > 10) {
+      numberDiv.textContent = 'Введите число от 1 до 10.';
+      return;
+    }
+
+    for (let i = 0; i < length; i++) {
+      game2Number += Math.floor(Math.random() * 10).toString();
+    }
+
+    numberDiv.textContent = game2Number;
+
+    setTimeout(() => {
+      numberDiv.textContent = '';
+    }, 3000);
+  }
+
+  function checkGame2() {
+    const userInput = document.getElementById('game2-input').value.trim();
+    const resultDiv = document.getElementById('game2-result');
+
+    if (userInput === game2Number && game2Number !== '') {
+      resultDiv.style.color = '#27ae60';
+      resultDiv.textContent = 'Правильно! Отличная память.';
+    } else {
+      resultDiv.style.color = '#e74c3c';
+      resultDiv.textContent = 'Неверно. Попробуйте ещё раз.';
+    }
+  }
+
+  function checkGame3() {
+    const select = document.getElementById('game3-select');
+    const resultDiv = document.getElementById('game3-result');
+    const answer = select.value;
+
+    if (answer === 'cat') {
+      resultDiv.style.color = '#27ae60';
+      resultDiv.textContent = 'Верно! "кот" переводится как "cat".';
+    } else if (answer === '') {
+      resultDiv.style.color = '#e67e22';
+      resultDiv.textContent = 'Пожалуйста, выберите ответ.';
+    } else {
+      resultDiv.style.color = '#e74c3c';
+      resultDiv.textContent = 'Неверно. Попробуйте ещё раз.';
+    }
+  }
+</script>
+
+</body>
+</html>

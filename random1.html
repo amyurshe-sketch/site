@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Игра с паузой и рандомом</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      text-align: center;
+      background: #fafafa;
+    }
+    label, button, input {
+      font-size: 1.2em;
+      margin: 10px 5px;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 5px;
+    }
+    button {
+      padding: 6px 12px;
+      cursor: pointer;
+      border: none;
+      background-color: #007BFF;
+      color: white;
+      border-radius: 6px;
+      transition: background-color 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #a0a0a0;
+      cursor: not-allowed;
+    }
+    #display {
+      font-size: 3em;
+      margin: 20px 0;
+      height: 60px;
+      font-weight: bold;
+      color: #333;
+      letter-spacing: 10px;
+      user-select: none;
+    }
+    #message {
+      font-size: 1.1em;
+      margin-top: 15px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Игра с паузой и рандомом</h2>
+
+  <label for="cyclesInput">Сколько раз повторять:</label>
+  <input type="number" id="cyclesInput" min="1" value="1" />
+  
+  <button id="startBtn">Начать</button>
+
+  <div id="display">---</div>
+
+  <button id="repeatBtn" style="display:none;">Повторить</button>
+
+  <div id="message"></div>
+
+<script>
+  const cyclesInput = document.getElementById('cyclesInput');
+  const startBtn = document.getElementById('startBtn');
+  const display = document.getElementById('display');
+  const repeatBtn = document.getElementById('repeatBtn');
+  const message = document.getElementById('message');
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function rPause(totalCycles) {
+    let count = 0;
+    display.textContent = '---';
+    await sleep(3000);
+
+    while (totalCycles > 0) {
+      display.textContent = ' ';
+      await sleep(100);
+
+      if (count < 4) {
+        display.textContent = Math.floor(Math.random() * 10);
+        await sleep(1000);
+        count++;
+      } else {
+        display.textContent = '---';
+        await sleep(3000);
+        count = 0;
+        totalCycles--;
+      }
+    }
+    display.textContent = '---';
+  }
+
+  async function startGame() {
+    message.textContent = '';
+    repeatBtn.style.display = 'none';
+    const totalCycles = parseInt(cyclesInput.value);
+    if (!totalCycles || totalCycles < 1) {
+      alert('Пожалуйста, введите целое положительное число.');
+      return;
+    }
+
+    startBtn.disabled = true;
+    cyclesInput.disabled = true;
+
+    await rPause(totalCycles);
+
+    startBtn.disabled = false;
+    cyclesInput.disabled = false;
+
+    repeatBtn.style.display = 'inline-block';
+    message.textContent = 'Цикл завершён. Хотите повторить?';
+  }
+
+  startBtn.addEventListener('click', startGame);
+
+  repeatBtn.addEventListener('click', () => {
+    message.textContent = '';
+    repeatBtn.style.display = 'none';
+    cyclesInput.value = '';
+    display.textContent = '---';
+    cyclesInput.focus();
+  });
+</script>
+
+</body>
+</html>
