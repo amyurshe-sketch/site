@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Игра Память на квадрате</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+    background: #f0f0f0;
+  }
+  #game {
+    display: grid;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .square {
+    background-color: #666;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+  }
+  .red {
+    background-color: red !important;
+  }
+  .covered {
+    background-color: #222 !important;
+    cursor: pointer;
+  }
+  #backBtn, #stopBtn, #result {
+    margin-top: 20px;
+    font-size: 18px;
+  }
+  #result {
+    font-weight: bold;
+    min-height: 24px;
+  }
+  #welcome {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 100;
+  }
+  #welcome h1 {
+    margin-bottom: 20px;
+  }
+  #welcome p {
+    margin: 10px 0;
+    max-width: 500px;
+    line-height: 1.5;
+  }
+  #welcomeBtn {
+    padding: 12px 24px;
+    font-size: 18px;
+    margin-top: 30px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  #welcomeBtn:hover {
+    background: #45a049;
+    transform: scale(1.05);
+  }
+  #statsOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 99;
+    font-size: 24px;
+  }
+  #statsContent {
+    background: #333;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 500px;
+    animation: fadeIn 0.5s ease-out;
+  }
+  #backBtn, #stopBtn {
+    padding: 12px 24px;
+    font-size: 18px;
+    color: #333;
+    background: transparent;
+    border: 2px solid #666;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin: 0 10px;
+  }
+  #backBtn:hover, #stopBtn:hover {
+    background: #f0f0f0;
+    transform: translateY(-2px);
+  }
+  #stopBtn:disabled {
+    color: #aaa;
+    border-color: #ccc;
+    cursor: not-allowed;
+  }
+  .buttons-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  #continueBtn {
+    margin-top: 30px;
+    padding: 12px 24px;
+    font-size: 18px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  #continueBtn:hover {
+    background: #45a049;
+    transform: scale(1.05);
+  }
+
+  /* Анимации */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes flash {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.5; }
+  }
+
+  .shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  .pulse {
+    animation: pulse 0.5s ease-in-out;
+  }
+
+  .flash {
+    animation: flash 0.5s ease-in-out;
+  }
+
+  .correct {
+    animation: pulse 0.5s ease-in-out;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+  }
+
+  .wrong {
+    animation: shake 0.5s ease-in-out;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+  }
+
+  .highlight {
+    animation: pulse 1s infinite;
+  }
+
+  /* Анимация вибрации для устройств без поддержки вибрации */
+  @keyframes vibrate {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+  }
+
+  .vibrate {
+    animation: vibrate 0.3s linear;
+  }
+</style>
+</head>
+<body>
+
+<div id="welcome">
+  <h1>Добро пожаловать в игру "Найди квадраты"!</h1>
+  <p>Ваша задача - запомнить расположение красных квадратов и кликнуть по ним после того, как они скроются.</p>
+  <p>Игра начинается с одного квадрата, но после каждых двух успешных попыток количество квадратов для поиска увеличивается.</p>
+  <button id="welcomeBtn">Начать игру</button>
+</div>
+
+<div id="statsOverlay">
+  <div id="statsContent"></div>
+  <button id="continueBtn">Продолжить</button>
+</div>
+
+<h2>Игра на память: Найдите красные квадраты</h2>
+<div class="buttons-container">
+  <button id="backBtn">Назад</button>
+  <button id="stopBtn" disabled>Пауза</button>
+</div>
+<div id="game"></div>
+<div id="result"></div>
+
+<script>
+  const game = document.getElementById('game');
+  const stopBtn = document.getElementById('stopBtn');
+  const backBtn = document.getElementById('backBtn');
+  const result = document.getElementById('result');
+  const welcome = document.getElementById('welcome');
+  const welcomeBtn = document.getElementById('welcomeBtn');
+  const statsOverlay = document.getElementById('statsOverlay');
+  const statsContent = document.getElementById('statsContent');
+  const continueBtn = document.getElementById('continueBtn');
+
+  let size = 10;
+  let squareSize = 30;
+  let gapSize = 4;
+
+  let redIndexes = [];
+  let state = 'idle';
+  let timerId = null;
+
+  let correctCount = 0;
+  let totalGames = 0;
+  let squaresToFind = 1;
+
+  // Проверка поддержки вибрации и альтернативная реализация
+  function vibrate(pattern) {
+    if (navigator.vibrate) {
+      navigator.vibrate(pattern);
+    } else {
+      // Альтернатива для устройств без поддержки вибрации
+      document.body.classList.add('vibrate');
+      setTimeout(() => {
+        document.body.classList.remove('vibrate');
+      }, typeof pattern === 'number' ? pattern : pattern.reduce((a, b) => a + b, 0));
+    }
+  }
+
+  function updateGridStyle() {
+    game.style.gridTemplateColumns = `repeat(${size}, ${squareSize}px)`;
+    game.style.gridTemplateRows = `repeat(${size}, ${squareSize}px)`;
+    game.style.gap = gapSize + 'px';
+  }
+
+  function createBoard() {
+    game.innerHTML = '';
+    updateGridStyle();
+    for (let i = 0; i < size * size; i++) {
+      const sq = document.createElement('div');
+      sq.classList.add('square');
+      sq.style.width = squareSize + 'px';
+      sq.style.height = squareSize + 'px';
+      sq.dataset.index = i;
+      sq.addEventListener('click', onSquareClick);
+      game.appendChild(sq);
+    }
+  }
+
+  function pickRedIndexes() {
+    const count = squaresToFind;
+    const totalSquares = size * size;
+    const picked = new Set();
+    while (picked.size < count) {
+      picked.add(Math.floor(Math.random() * totalSquares));
+    }
+    return Array.from(picked);
+  }
+
+  function showRed() {
+    state = 'showRed';
+    const squares = document.querySelectorAll('.square');
+    redIndexes = pickRedIndexes();
+    
+    squares.forEach((sq, i) => {
+      sq.classList.remove('red', 'covered', 'highlight');
+      sq.style.pointerEvents = 'none';
+      sq.style.backgroundColor = '';
+      if (redIndexes.includes(i)) {
+        sq.classList.add('red', 'highlight');
+      }
+    });
+
+    setTimeout(() => {
+      coverAll();
+    }, 1500 + 700 * (squaresToFind - 1));
+  }
+
+  function coverAll() {
+    state = 'covered';
+    const squares = document.querySelectorAll('.square');
+    squares.forEach(sq => {
+      sq.classList.remove('red', 'highlight');
+      sq.classList.add('covered');
+      sq.style.pointerEvents = 'auto';
+      sq.style.backgroundColor = '';
+    });
+    result.textContent = `Найдите ${squaresToFind} красный${squaresToFind === 1 ? 'й' : 'х'} квадрат${squaresToFind === 1 ? '' : 'ов'}, кликнув по ним по очереди.`;
+    state = 'selecting';
+  }
+
+  let userGuesses =[];
+
+  function onSquareClick(e) {
+    if (state !== 'selecting') return;
+    const clickedIndex = +e.target.dataset.index;
+    const squares = document.querySelectorAll('.square');
+
+    if(userGuesses.includes(clickedIndex)) return;
+
+    userGuesses.push(clickedIndex);
+
+    if (redIndexes.includes(clickedIndex)) {
+      squares[clickedIndex].classList.remove('covered');
+      squares[clickedIndex].classList.add('red', 'correct');
+      vibrate(50);
+      
+      setTimeout(() => {
+        squares[clickedIndex].classList.remove('correct');
+      }, 500);
+    } else {
+      squares[clickedIndex].classList.add('wrong');
+      squares[clickedIndex].style.backgroundColor = '#880000';
+      vibrate(200);
+      
+      redIndexes.forEach(idx => {
+        squares[idx].classList.remove('covered');
+        squares[idx].classList.add('red', 'flash');
+      });
+      
+      state = 'idle';
+      totalGames++;
+      result.textContent = 'Неправильно. Вот где были красные квадраты.';
+      userGuesses = [];
+      
+      setTimeout(() => {
+        document.querySelectorAll('.square').forEach(sq => {
+          sq.classList.remove('flash', 'wrong');
+        });
+      }, 500);
+      
+      timerId = setTimeout(startGame, 2000);
+      return;
+    }
+
+    if(userGuesses.length === squaresToFind){
+      totalGames++;
+      correctCount++;
+      state = 'idle';
+      result.textContent = `Отлично! Вы нашли все ${squaresToFind} правильных квадрата.`;
+      result.classList.add('pulse');
+      vibrate([100, 50, 100]);
+      
+      setTimeout(() => {
+        result.classList.remove('pulse');
+      }, 1000);
+
+      if (correctCount > 0 && correctCount % 2 === 0) {
+        squaresToFind++;
+      }
+
+      userGuesses = [];
+      timerId = setTimeout(startGame, 2000);
+    }
+  }
+
+  function startGame() {
+    statsOverlay.style.display = 'none';
+    stopBtn.disabled = false;
+    result.textContent = '';
+    createBoard();
+    showRed();
+  }
+
+  function stopGame() {
+    if(timerId) clearTimeout(timerId);
+    state = 'idle';
+    stopBtn.disabled = true;
+
+    game.innerHTML = '';
+    result.textContent = '';
+    
+    statsContent.innerHTML = 
+      `<h2>Пауза</h2>
+      <p>Всего попыток: <b>${totalGames}</b></p>
+      <p>Правильных ответов: <b>${correctCount}</b></p>
+      <p>Размер сетки: <b>${size}x${size}</b></p>
+      <p>Количество квадратов для поиска: <b>${squaresToFind}</b></p>`;
+    
+    statsOverlay.style.display = 'flex';
+    vibrate(100);
+  }
+
+  welcomeBtn.addEventListener('click', () => {
+    welcome.style.display = 'none';
+    vibrate(50);
+    startGame();
+  });
+
+  stopBtn.addEventListener('click', stopGame);
+
+  backBtn.addEventListener('click', () => {
+    vibrate(50);
+    window.location.href = 'main.html';
+  });
+
+  continueBtn.addEventListener('click', () => {
+    vibrate(50);
+    startGame();
+  });
+
+  createBoard();
+</script>
+</body>
+</html>
