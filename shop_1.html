@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Барбершоп — Пробный проект | Современный</title>
+<meta name="description" content="Современный пробный проект барбершопа.">
+
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BK0RR0L30W"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BK0RR0L30W');
+</script>
+
+<style>
+  /* Сброс стилей и базовая адаптивность */
+  * { margin:0; padding:0; box-sizing:border-box; font-family: 'Roboto', sans-serif; }
+  body { line-height:1.6; color:#333; background-color: #f8f8f8; } /* Легкий серый фон для современного вида */
+
+  /* Исправление: Убираем height: 100vh, чтобы страница не была далеко внизу */
+  header {
+    background: url('https://images.unsplash.com/photo-1602785844188-1c0318d7a1be?auto=format&fit=crop&w=1920&q=80') no-repeat center top/cover;
+    min-height: 500px; /* Устанавливаем минимальную высоту */
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    color:#fff;
+    text-align:center;
+    padding: 80px 20px 40px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  header h1 { font-size:3rem; margin-bottom:10px; font-weight:700; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+  header p { font-size:1.4rem; max-width:700px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
+  section { padding:80px 20px; max-width:1200px; margin:0 auto; }
+  h2 { text-align:center; font-size:2.5rem; margin-bottom:50px; font-weight:300; color: #1a1a1a; }
+
+  /* Стили для карточек услуг */
+  .services {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap:30px;
+  }
+  .service-card {
+    background:#fff;
+    padding:25px;
+    border-radius:12px;
+    text-align:center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+  .service-card img { width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:15px; }
+  .service-card h3 { color: #333; font-size: 1.5rem; margin-bottom: 10px; }
+  .service-card p { color: #666; }
+
+  /* Секция формы */
+  .form-section { background:#fff; padding:60px 20px; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  form { max-width:700px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
+  textarea, input { padding:12px; border-radius:8px; border:1px solid #ddd; width:100%; font-size:1rem; transition: border-color 0.3s; }
+  textarea:focus, input:focus { border-color: #333; outline: none; }
+
+  /* Стили для кнопок (отправка и тесты GA) */
+  .button-group { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+  .btn {
+    padding:15px;
+    border:none;
+    border-radius:8px;
+    background:#333;
+    color:#fff;
+    cursor:pointer;
+    font-size:1.1rem;
+    font-weight:700;
+    transition: background-color 0.3s, transform 0.2s;
+    text-align: center;
+    text-decoration: none;
+  }
+  .btn:hover { background:#555; transform: translateY(-2px); }
+
+  .btn-secondary {
+      background: #777; /* Серый цвет для тестовых кнопок */
+  }
+  .btn-secondary:hover { background: #999; }
+
+  /* Анимация (если нужно, можно добавить более сложную, но начнем с hover) */
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .pulse:hover { animation: pulse 0.5s ease-in-out; }
+
+  footer { text-align:center; padding:30px; font-size:0.9rem; color:#999; background-color: #333; color: #fff; }
+
+  @media(max-width:768px) {
+    header h1 { font-size:2.5rem; }
+    header p { font-size:1.2rem; }
+    h2 { font-size:2rem; }
+    section { padding:40px 15px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Барбершоп «Современный Проект»</h1>
+  <p>Обновленный макет одностраничного сайта с современным дизайном и функционалом.</p>
+</header>
+
+<section class="services">
+  <h2>Наши услуги</h2>
+  <div class="services">
+    <div class="service-card">
+      <img src="https://images.unsplash.com/photo-1617106960545-342ff77a1c09?auto=format&fit=crop&w=800&q=80" alt="Стрижка">
+      <h3>Стрижка</h3>
+      <p>Современные мужские стрижки и бритьё бороды профессионалами.</p>
+    </div>
+    <div class="service-card">
+      <img src="https://images.unsplash.com/photo-1573496776980-7b4b1077e3b1?auto=format&fit=crop&w=800&q=80" alt="Бритьё">
+      <h3>Бритьё</h3>
+      <p>Классическое бритьё и уход за кожей лица.</p>
+    </div>
+    <div class="service-card">
+      <img src="https://images.unsplash.com/photo-1597487777727-2c073476490f?auto=format&fit=crop&w=800&q=80" alt="Уход">
+      <h3>Уход за бородой</h3>
+      <p>Моделирование, стайлинг и уход за бородой.</p>
+    </div>
+  </div>
+</section>
+
+<section class="form-section">
+  <h2>Свяжитесь с нами и Проверка GA</h2>
+
+  <form id="contactForm" method="POST" action="send.php">
+    <textarea name="message" placeholder="Введите ваше сообщение для Telegram Bot..." required></textarea>
+    <button type="submit" class="btn pulse">Отправить в Telegram</button>
+  </form>
+
+  <div class="button-group">
+    <p style="text-align: center; margin-top: 40px; color: #666;">Кнопки для проверки Google Analytics (нажмите и смотрите Realtime отчет):</p>
+    <button id="test-click-btn" class="btn btn-secondary pulse">Тест GA: Нажать</button>
+    
+    <button id="test-view-btn" class="btn btn-secondary pulse">Тест GA: Просмотр</button>
+  </div>
+</section>
+
+<footer>
+  © 2025 Барбершоп «Пробный проект». Обновленный дизайн.
+</footer>
+
+<script>
+    document.getElementById('test-click-btn').addEventListener('click', function() {
+        // Отправка кастомного события 'ga_test_click'
+        gtag('event', 'ga_test_click', {
+            'event_category': 'test_engagement',
+            'event_label': 'button_test_click',
+            'value': 1
+        });
+        alert('Событие "ga_test_click" отправлено в Google Analytics! Проверьте Realtime отчет.');
+    });
+
+    document.getElementById('test-view-btn').addEventListener('click', function() {
+        // Отправка кастомного события 'ga_test_view'
+        gtag('event', 'ga_test_view', {
+            'event_category': 'test_engagement',
+            'event_label': 'button_test_view',
+            'value': 2
+        });
+        alert('Событие "ga_test_view" отправлено в Google Analytics! Проверьте Realtime отчет.');
+    });
+</script>
+
+</body>
+</html>
